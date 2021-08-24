@@ -193,8 +193,8 @@ void Update_PWM()
 		speed=speed1;}
 	
 	if (speed>12000&speed<20000){
-		pulse_1=1000+(speed-12000)/8;
-		pulse_2=2000-(speed-12000)/8;
+		pulse_1=9610+(speed-12000)/3.125f;
+		pulse_2=12172-(speed-12000)/3.125f;
 		__HAL_TIM_SET_COMPARE(&htim3, TIM_CHANNEL_2, pulse_1);
 		__HAL_TIM_SET_COMPARE(&htim3, TIM_CHANNEL_3, pulse_2);
 		AB_ON=1;
@@ -205,20 +205,20 @@ void Update_PWM()
 void AB_test()
 {
 	for(int i=0; i<2; i++){
-	__HAL_TIM_SET_COMPARE(&htim3, TIM_CHANNEL_2, 1000);
-	__HAL_TIM_SET_COMPARE(&htim3, TIM_CHANNEL_3, 1800);
+	__HAL_TIM_SET_COMPARE(&htim3, TIM_CHANNEL_2, 9610);
+	__HAL_TIM_SET_COMPARE(&htim3, TIM_CHANNEL_3, 12172);
 	HAL_Delay(500);
-	__HAL_TIM_SET_COMPARE(&htim3, TIM_CHANNEL_2, 1200);
-	__HAL_TIM_SET_COMPARE(&htim3, TIM_CHANNEL_3, 1600);
+	__HAL_TIM_SET_COMPARE(&htim3, TIM_CHANNEL_2, 10110);
+	__HAL_TIM_SET_COMPARE(&htim3, TIM_CHANNEL_3, 11110);
 	HAL_Delay(500);
-	__HAL_TIM_SET_COMPARE(&htim3, TIM_CHANNEL_2, 1400);
-	__HAL_TIM_SET_COMPARE(&htim3, TIM_CHANNEL_3, 1400);
+	__HAL_TIM_SET_COMPARE(&htim3, TIM_CHANNEL_2, 10610);
+	__HAL_TIM_SET_COMPARE(&htim3, TIM_CHANNEL_3, 10610);
 	HAL_Delay(500);
-	__HAL_TIM_SET_COMPARE(&htim3, TIM_CHANNEL_2, 1600);
-	__HAL_TIM_SET_COMPARE(&htim3, TIM_CHANNEL_3, 1200);
+	__HAL_TIM_SET_COMPARE(&htim3, TIM_CHANNEL_2, 11110);
+	__HAL_TIM_SET_COMPARE(&htim3, TIM_CHANNEL_3, 10110);
 	HAL_Delay(500);
-	__HAL_TIM_SET_COMPARE(&htim3, TIM_CHANNEL_2, 1800);
-	__HAL_TIM_SET_COMPARE(&htim3, TIM_CHANNEL_3, 1000);
+	__HAL_TIM_SET_COMPARE(&htim3, TIM_CHANNEL_2, 12170);
+	__HAL_TIM_SET_COMPARE(&htim3, TIM_CHANNEL_3, 9610);
 	HAL_Delay(500);
 }
 }
@@ -234,9 +234,10 @@ void SystemClock_Config(void)
 
     /**Initializes the CPU, AHB and APB busses clocks 
     */
-  RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSI;
+  RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSE;
+  RCC_OscInitStruct.HSEState = RCC_HSE_ON;
+  RCC_OscInitStruct.HSEPredivValue = RCC_HSE_PREDIV_DIV2;
   RCC_OscInitStruct.HSIState = RCC_HSI_ON;
-  RCC_OscInitStruct.HSICalibrationValue = 16;
   RCC_OscInitStruct.PLL.PLLState = RCC_PLL_ON;
   RCC_OscInitStruct.PLL.PLLSource = RCC_PLLSOURCE_HSI;
   RCC_OscInitStruct.PLL.PLLMUL = RCC_PLL_MUL12;
@@ -345,9 +346,9 @@ static void MX_TIM3_Init(void)
   TIM_OC_InitTypeDef sConfigOC;
 
   htim3.Instance = TIM3;
-  htim3.Init.Prescaler = 48-1;
+  htim3.Init.Prescaler = 5-1;
   htim3.Init.CounterMode = TIM_COUNTERMODE_UP;
-  htim3.Init.Period = 20000-1;
+  htim3.Init.Period = 28829-1;
   htim3.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
   htim3.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
   if (HAL_TIM_PWM_Init(&htim3) != HAL_OK)
@@ -363,14 +364,14 @@ static void MX_TIM3_Init(void)
   }
 
   sConfigOC.OCMode = TIM_OCMODE_PWM1;
-  sConfigOC.Pulse = 1000; //1000 a 2000 (1 a 2ms)
+  sConfigOC.Pulse = 9610; //9610 a 19219 (1 a 2ms->120º) En este caso 0º
   sConfigOC.OCPolarity = TIM_OCPOLARITY_HIGH;
   sConfigOC.OCFastMode = TIM_OCFAST_DISABLE;
   if (HAL_TIM_PWM_ConfigChannel(&htim3, &sConfigOC, TIM_CHANNEL_2) != HAL_OK)
   {
     _Error_Handler(__FILE__, __LINE__);
   }
-
+  sConfigOC.Pulse = 12172;  //En este caso 60-28º=32º con respecto al primero
   if (HAL_TIM_PWM_ConfigChannel(&htim3, &sConfigOC, TIM_CHANNEL_3) != HAL_OK)
   {
     _Error_Handler(__FILE__, __LINE__);
