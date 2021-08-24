@@ -38,18 +38,33 @@
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
 #include "stm32f3xx_hal.h"
+#include "CAN.h"
+#include "WSS.h"
+#include "math.h"
 
 /* USER CODE BEGIN Includes */
+volatile uint8_t AB_ON=0;
 volatile uint8_t AB_activation=0;
 volatile uint8_t AB_transmit=0;
+volatile uint8_t AB_update=0;
+volatile uint8_t WSS_read=0;
+volatile float speed=0;
+volatile float speed1=0;
+volatile float speed2=0;
+volatile float speed3=0;
+	
 volatile uint16_t CAN_TRANSMIT_FREQ = 20;
+volatile uint16_t CAN_RECEIVE_FREQ = 100;
+volatile uint16_t AB_UPDATE_FREQ = 100;
+volatile uint16_t WSS_UPDATE_FREQ = 100;
 
 volatile uint16_t speedRR_p, speedRL_p;
 volatile uint16_t speedFR_p, speedFL_p;
 volatile uint32_t	velNord_car=0, velEast_car=0, velDown_car=0;
+volatile WSS_t FR, FL, RL, RR;
 
 /*Value of the pulses generated. Needs to be checked*/
-volatile uint16_t pulse_1=10536, pulse_2=15354;
+volatile uint16_t pulse_1=1000, pulse_2=2000;
 
 /*Needed to control the button bounce*/
 CanRxMsgTypeDef RxMessage;
@@ -76,7 +91,8 @@ static void MX_TIM2_Init(void);
 static void MX_TIM3_Init(void);
 
 void HAL_TIM_MspPostInit(TIM_HandleTypeDef *htim);
-                                
+void Update_PWM(void);                                
+void AB_test(void);
 
 /* USER CODE BEGIN PFP */
 /* Private function prototypes -----------------------------------------------*/
@@ -117,29 +133,95 @@ int main(void)
   /* Initialize all configured peripherals */
   MX_GPIO_Init();
   MX_CAN_Init();
-	hcan.pRxMsg=&RxMessage;
-	hcan.pTxMsg=&TxMessage;
 	HAL_CAN_Receive_IT(&hcan,CAN_FIFO0);
-  MX_TIM2_Init();
   MX_TIM3_Init();
+	MX_TIM2_Init();
+	
   /* USER CODE BEGIN 2 */
-
+	HAL_TIM_IC_Start_IT(&htim2, TIM_CHANNEL_1);
+	HAL_TIM_IC_Start_IT(&htim2, TIM_CHANNEL_4);
   /* USER CODE END 2 */
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
   while (1)
   {
-
-  /* USER CODE END WHILE */
-
-  /* USER CODE BEGIN 3 */
-
-  }
+	if(AB_transmit==1)
+	{
+		send_CAN_data();
+		AB_transmit=FLAG_RESET;
+	}
+	if(WSS_read==1)
+	{
+		HAL_NVIC_DisableIRQ(TIM2_IRQn);
+		ReadAllSpeeds();
+		HAL_NVIC_EnableIRQ(TIM2_IRQn);
+		WSS_read=0;
+		}	
+	if(AB_activation)
+	{
+		AB_test();
+		AB_activation=FLAG_RESET;
+	}
+	if(AB_update)
+	{
+		Update_PWM();
+		AB_update=FLAG_RESET;
+	}
   /* USER CODE END 3 */
-
+  }
 }
 
+/*Configuration for the value for each tick*/
+void ConfigureSysTick(void)
+{
+	if(SysTick_Config(SystemCoreClock / 1000))
+		while(1);
+}
+
+void Update_PWM()
+{
+	speed1=FR.speed+FL.speed/2;
+	speed2=speedFR_p+speedFL_p/2;
+	speed3=pow(pow(velEast_car,2)+pow(velDown_car,2)+pow(velNord_car,2),0.5f);
+	
+	if (speed3>0){
+		speed=speed3;}
+	if (speed2>0){
+		speed=speed2;}
+	if (speed1>0){
+		speed=speed1;}
+	
+	if (speed>12000&speed<20000){
+		pulse_1=9610+(speed-12000)/3.125f;
+		pulse_2=12172-(speed-12000)/3.125f;
+		__HAL_TIM_SET_COMPARE(&htim3, TIM_CHANNEL_2, pulse_1);
+		__HAL_TIM_SET_COMPARE(&htim3, TIM_CHANNEL_3, pulse_2);
+		AB_ON=1;
+		HAL_Delay(1000);
+	}
+}
+
+void AB_test()
+{
+	for(int i=0; i<2; i++){
+	__HAL_TIM_SET_COMPARE(&htim3, TIM_CHANNEL_2, 9610);
+	__HAL_TIM_SET_COMPARE(&htim3, TIM_CHANNEL_3, 12172);
+	HAL_Delay(500);
+	__HAL_TIM_SET_COMPARE(&htim3, TIM_CHANNEL_2, 10110);
+	__HAL_TIM_SET_COMPARE(&htim3, TIM_CHANNEL_3, 11110);
+	HAL_Delay(500);
+	__HAL_TIM_SET_COMPARE(&htim3, TIM_CHANNEL_2, 10610);
+	__HAL_TIM_SET_COMPARE(&htim3, TIM_CHANNEL_3, 10610);
+	HAL_Delay(500);
+	__HAL_TIM_SET_COMPARE(&htim3, TIM_CHANNEL_2, 11110);
+	__HAL_TIM_SET_COMPARE(&htim3, TIM_CHANNEL_3, 10110);
+	HAL_Delay(500);
+	__HAL_TIM_SET_COMPARE(&htim3, TIM_CHANNEL_2, 12170);
+	__HAL_TIM_SET_COMPARE(&htim3, TIM_CHANNEL_3, 9610);
+	HAL_Delay(500);
+}
+}
 /**
   * @brief System Clock Configuration
   * @retval None
@@ -152,9 +234,10 @@ void SystemClock_Config(void)
 
     /**Initializes the CPU, AHB and APB busses clocks 
     */
-  RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSI;
+  RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSE;
+  RCC_OscInitStruct.HSEState = RCC_HSE_ON;
+  RCC_OscInitStruct.HSEPredivValue = RCC_HSE_PREDIV_DIV2;
   RCC_OscInitStruct.HSIState = RCC_HSI_ON;
-  RCC_OscInitStruct.HSICalibrationValue = 16;
   RCC_OscInitStruct.PLL.PLLState = RCC_PLL_ON;
   RCC_OscInitStruct.PLL.PLLSource = RCC_PLLSOURCE_HSI;
   RCC_OscInitStruct.PLL.PLLMUL = RCC_PLL_MUL12;
@@ -194,6 +277,8 @@ static void MX_CAN_Init(void)
 {
 
   hcan.Instance = CAN;
+	hcan.pRxMsg=&RxMessage;
+	hcan.pTxMsg=&TxMessage;
   hcan.Init.Prescaler = 2;
   hcan.Init.Mode = CAN_MODE_NORMAL;
   hcan.Init.SJW = CAN_SJW_1TQ;
@@ -220,9 +305,9 @@ static void MX_TIM2_Init(void)
   TIM_IC_InitTypeDef sConfigIC;
 
   htim2.Instance = TIM2;
-  htim2.Init.Prescaler = 0;
+  htim2.Init.Prescaler = 48-1;
   htim2.Init.CounterMode = TIM_COUNTERMODE_UP;
-  htim2.Init.Period = 0;
+  htim2.Init.Period = 0xFFFFFFFF;
   htim2.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
   htim2.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
   if (HAL_TIM_IC_Init(&htim2) != HAL_OK)
@@ -261,9 +346,9 @@ static void MX_TIM3_Init(void)
   TIM_OC_InitTypeDef sConfigOC;
 
   htim3.Instance = TIM3;
-  htim3.Init.Prescaler = 0;
+  htim3.Init.Prescaler = 5-1;
   htim3.Init.CounterMode = TIM_COUNTERMODE_UP;
-  htim3.Init.Period = 0;
+  htim3.Init.Period = 28829-1;
   htim3.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
   htim3.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
   if (HAL_TIM_PWM_Init(&htim3) != HAL_OK)
@@ -279,14 +364,14 @@ static void MX_TIM3_Init(void)
   }
 
   sConfigOC.OCMode = TIM_OCMODE_PWM1;
-  sConfigOC.Pulse = 0;
+  sConfigOC.Pulse = 9610; //9610 a 19219 (1 a 2ms->120º) En este caso 0º
   sConfigOC.OCPolarity = TIM_OCPOLARITY_HIGH;
   sConfigOC.OCFastMode = TIM_OCFAST_DISABLE;
   if (HAL_TIM_PWM_ConfigChannel(&htim3, &sConfigOC, TIM_CHANNEL_2) != HAL_OK)
   {
     _Error_Handler(__FILE__, __LINE__);
   }
-
+  sConfigOC.Pulse = 12172;  //En este caso 60-28º=32º con respecto al primero
   if (HAL_TIM_PWM_ConfigChannel(&htim3, &sConfigOC, TIM_CHANNEL_3) != HAL_OK)
   {
     _Error_Handler(__FILE__, __LINE__);
@@ -294,6 +379,18 @@ static void MX_TIM3_Init(void)
 
   HAL_TIM_MspPostInit(&htim3);
 
+	HAL_TIM_Base_Start(&htim3); //Starts the TIM Base generation. Si todo esta bien lo iniciamos
+	
+  if (HAL_TIM_PWM_Start(&htim3, TIM_CHANNEL_2) != HAL_OK)//Starts the PWM signal generation
+  {
+    /* PWM Generation Error */
+    Error_Handler();
+  }
+	if (HAL_TIM_PWM_Start(&htim3, TIM_CHANNEL_3) != HAL_OK)//Starts the PWM signal generation
+  {
+    /* PWM Generation Error */
+    Error_Handler();
+  }
 }
 
 /** Pinout Configuration
@@ -316,6 +413,12 @@ void HAL_SYSTICK_Callback(void)
 	
 	if(!AB_transmit && !(uwTick % (1000/CAN_TRANSMIT_FREQ)))
 		AB_transmit = FLAG_SET;
+	if(!AB_update && !(uwTick % (1000/AB_UPDATE_FREQ)))
+		AB_update = FLAG_SET;
+	if(!WSS_read && !(uwTick % (1000/WSS_UPDATE_FREQ)))
+		WSS_read = FLAG_SET;	
+	if(!(uwTick % (1000/CAN_TRANSMIT_FREQ)))	
+		HAL_CAN_Receive_IT(&hcan,CAN_FIFO0);
 }
 
 

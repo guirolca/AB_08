@@ -103,6 +103,9 @@ void HAL_CAN_MspInit(CAN_HandleTypeDef* hcan)
     /* CAN interrupt Init */
     HAL_NVIC_SetPriority(CAN_TX_IRQn, 0, 0);
     HAL_NVIC_EnableIRQ(CAN_TX_IRQn);
+		HAL_NVIC_SetPriority(CAN_RX0_IRQn, 0, 0);
+    HAL_NVIC_EnableIRQ(CAN_RX0_IRQn);
+		
   /* USER CODE BEGIN CAN_MspInit 1 */
 
   /* USER CODE END CAN_MspInit 1 */
@@ -129,6 +132,7 @@ void HAL_CAN_MspDeInit(CAN_HandleTypeDef* hcan)
 
     /* CAN interrupt DeInit */
     HAL_NVIC_DisableIRQ(CAN_TX_IRQn);
+		HAL_NVIC_DisableIRQ(CAN_RX0_IRQn);
   /* USER CODE BEGIN CAN_MspDeInit 1 */
 
   /* USER CODE END CAN_MspDeInit 1 */
@@ -166,6 +170,21 @@ void HAL_TIM_IC_MspInit(TIM_HandleTypeDef* htim_ic)
 
 }
 
+void HAL_TIM_Base_MspInit(TIM_HandleTypeDef* htim_base)
+{
+  if(htim_base->Instance==TIM3)
+  {
+  /* USER CODE BEGIN TIM1_MspInit 0 */
+
+  /* USER CODE END TIM1_MspInit 0 */
+    /* Peripheral clock enable */
+    __HAL_RCC_TIM3_CLK_ENABLE();
+  /* USER CODE BEGIN TIM1_MspInit 1 */
+
+  /* USER CODE END TIM1_MspInit 1 */
+  }
+}
+
 void HAL_TIM_PWM_MspInit(TIM_HandleTypeDef* htim_pwm)
 {
 
@@ -190,7 +209,7 @@ void HAL_TIM_MspPostInit(TIM_HandleTypeDef* htim)
   if(htim->Instance==TIM3)
   {
   /* USER CODE BEGIN TIM3_MspPostInit 0 */
-
+    __HAL_RCC_TIM3_CLK_ENABLE();
   /* USER CODE END TIM3_MspPostInit 0 */
   
     /**TIM3 GPIO Configuration    

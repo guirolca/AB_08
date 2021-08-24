@@ -503,6 +503,11 @@
               <FileType>1</FileType>
               <FilePath>..\Src\CAN.c</FilePath>
             </File>
+            <File>
+              <FileName>WSS.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\Src\WSS.c</FilePath>
+            </File>
           </Files>
         </Group>
         <Group>
