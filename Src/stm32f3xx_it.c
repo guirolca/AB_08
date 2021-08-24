@@ -34,6 +34,7 @@
 #include "stm32f3xx_hal.h"
 #include "stm32f3xx.h"
 #include "stm32f3xx_it.h"
+#include "CAN.h"
 
 /* USER CODE BEGIN 0 */
 
@@ -41,6 +42,7 @@
 
 /* External variables --------------------------------------------------------*/
 extern CAN_HandleTypeDef hcan;
+extern CanRxMsgTypeDef RxMessage;
 
 /******************************************************************************/
 /*            Cortex-M4 Processor Interruption and Exception Handlers         */ 
@@ -204,6 +206,18 @@ void CAN_TX_IRQHandler(void)
   /* USER CODE BEGIN CAN_TX_IRQn 1 */
 
   /* USER CODE END CAN_TX_IRQn 1 */
+}
+
+void CAN_RX0_IRQHandler(void)
+{
+	/* USER CODE BEGIN CAN_RX0_IRQn 0 */
+	
+  /* USER CODE END CAN_RX0_IRQn 0 */
+  HAL_CAN_IRQHandler(&hcan);
+	/* USER CODE BEGIN CAN_RX0_IRQn 0 */
+	ReadCANData(&RxMessage);
+	HAL_CAN_Receive_IT(&hcan,CAN_FIFO0);
+  /* USER CODE END CAN_RX0_IRQn 1 */
 }
 
 /* USER CODE BEGIN 1 */
