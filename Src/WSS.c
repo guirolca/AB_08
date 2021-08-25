@@ -25,26 +25,26 @@ void Velocity_Calc(volatile WSS_t* Wss)
 
 void HAL_TIM_IC_CaptureCallback(TIM_HandleTypeDef *htim)
 {
-	if(htim->Instance==TIM2) //Se chequea que la interrupción ha sido generada por el TIM5
+	if(htim->Instance==TIM2) //Se chequea si la interrupción ha sido generada por el TIM2
 	{
 		if(htim->Channel == HAL_TIM_ACTIVE_CHANNEL_1)//Se chequea si la ha activado el canal 1
 		{
 			if(!FR.cnt)
 			{
 				FR.first_value=htim->Instance->CCR1; //Se guarda el valor del registro CCR1 
-				FR.cnt=1;														 // (valor del contador capturado)
+				FR.cnt=1;														 
 			}
 			else
 			{
-				FR.second_value=htim->Instance->CCR1; //Se guarda el valor del registro CCR1 
-				FR.cnt=0;															// (valor del contador capturado)
+				FR.second_value=htim->Instance->CCR1; 
+				FR.cnt=0;															
 			}
 		}
 		if(htim->Channel == HAL_TIM_ACTIVE_CHANNEL_4)
 		{
 			if(!FL.cnt)
 			{
-				FL.first_value=htim->Instance->CCR4;
+				FL.first_value=htim->Instance->CCR4;  //Se guarda el valor del registro CCR4
 				FL.cnt=1;
 			}
 			else

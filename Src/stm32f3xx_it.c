@@ -210,9 +210,6 @@ void CAN_TX_IRQHandler(void)
 
 void CAN_RX0_IRQHandler(void)
 {
-	/* USER CODE BEGIN CAN_RX0_IRQn 0 */
-	
-  /* USER CODE END CAN_RX0_IRQn 0 */
   HAL_CAN_IRQHandler(&hcan);
 	/* USER CODE BEGIN CAN_RX0_IRQn 0 */
 	ReadCANData(&RxMessage);
