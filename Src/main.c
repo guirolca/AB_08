@@ -54,7 +54,6 @@ volatile float speed2=0;
 volatile float speed3=0;
 	
 volatile uint16_t CAN_TRANSMIT_FREQ = 20;
-volatile uint16_t CAN_RECEIVE_FREQ = 100;
 volatile uint16_t AB_UPDATE_FREQ = 100;
 volatile uint16_t WSS_UPDATE_FREQ = 100;
 
@@ -64,7 +63,7 @@ volatile uint32_t	velNord_car=0, velEast_car=0, velDown_car=0;
 volatile WSS_t FR, FL, RL, RR;
 
 /*Value of the pulses generated. Needs to be checked*/
-volatile uint16_t pulse_1=1000, pulse_2=2000;
+volatile uint16_t pulse_1=0, pulse_2=0;
 
 /*Needed to control the button bounce*/
 CanRxMsgTypeDef RxMessage;
@@ -181,9 +180,9 @@ void ConfigureSysTick(void)
 
 void Update_PWM()
 {
-	speed1=FR.speed+FL.speed/2;
-	speed2=speedFR_p+speedFL_p/2;
-	speed3=pow(pow(velEast_car,2)+pow(velDown_car,2)+pow(velNord_car,2),0.5f);
+	speed1=(speedFR_p+speedFL_p)/2;
+	speed2=(FR.speed+FL.speed)/2;
+	speed3=pow(pow(velEast_car,2)+pow(velDown_car,2)+pow(velNord_car,2),0.5f)*1000;
 	
 	if (speed3>0){
 		speed=speed3;}
@@ -199,6 +198,9 @@ void Update_PWM()
 		__HAL_TIM_SET_COMPARE(&htim3, TIM_CHANNEL_3, pulse_2);
 		AB_ON=1;
 		HAL_Delay(1000);
+	}
+	else{
+		AB_ON=0;
 	}
 }
 
@@ -281,9 +283,9 @@ static void MX_CAN_Init(void)
 	hcan.pTxMsg=&TxMessage;
   hcan.Init.Prescaler = 2;
   hcan.Init.Mode = CAN_MODE_NORMAL;
-  hcan.Init.SJW = CAN_SJW_1TQ;
-  hcan.Init.BS1 = CAN_BS1_8TQ;
-  hcan.Init.BS2 = CAN_BS2_3TQ;
+  hcan.Init.SJW = CAN_SJW_4TQ;
+  hcan.Init.BS1 = CAN_BS1_5TQ;
+  hcan.Init.BS2 = CAN_BS2_6TQ;
   hcan.Init.TTCM = DISABLE;
   hcan.Init.ABOM = DISABLE;
   hcan.Init.AWUM = DISABLE;
@@ -314,7 +316,8 @@ static void MX_TIM2_Init(void)
   {
     _Error_Handler(__FILE__, __LINE__);
   }
-
+//...
+	
   sMasterConfig.MasterOutputTrigger = TIM_TRGO_RESET;
   sMasterConfig.MasterSlaveMode = TIM_MASTERSLAVEMODE_DISABLE;
   if (HAL_TIMEx_MasterConfigSynchronization(&htim2, &sMasterConfig) != HAL_OK)
@@ -355,7 +358,7 @@ static void MX_TIM3_Init(void)
   {
     _Error_Handler(__FILE__, __LINE__);
   }
-
+//...
   sMasterConfig.MasterOutputTrigger = TIM_TRGO_RESET;
   sMasterConfig.MasterSlaveMode = TIM_MASTERSLAVEMODE_DISABLE;
   if (HAL_TIMEx_MasterConfigSynchronization(&htim3, &sMasterConfig) != HAL_OK)

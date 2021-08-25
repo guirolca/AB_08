@@ -83,9 +83,6 @@ void HAL_CAN_MspInit(CAN_HandleTypeDef* hcan)
   GPIO_InitTypeDef GPIO_InitStruct;
   if(hcan->Instance==CAN)
   {
-  /* USER CODE BEGIN CAN_MspInit 0 */
-
-  /* USER CODE END CAN_MspInit 0 */
     /* Peripheral clock enable */
     __HAL_RCC_CAN1_CLK_ENABLE();
   
@@ -105,10 +102,6 @@ void HAL_CAN_MspInit(CAN_HandleTypeDef* hcan)
     HAL_NVIC_EnableIRQ(CAN_TX_IRQn);
 		HAL_NVIC_SetPriority(CAN_RX0_IRQn, 0, 0);
     HAL_NVIC_EnableIRQ(CAN_RX0_IRQn);
-		
-  /* USER CODE BEGIN CAN_MspInit 1 */
-
-  /* USER CODE END CAN_MspInit 1 */
   }
 
 }
@@ -146,9 +139,6 @@ void HAL_TIM_IC_MspInit(TIM_HandleTypeDef* htim_ic)
   GPIO_InitTypeDef GPIO_InitStruct;
   if(htim_ic->Instance==TIM2)
   {
-  /* USER CODE BEGIN TIM2_MspInit 0 */
-
-  /* USER CODE END TIM2_MspInit 0 */
     /* Peripheral clock enable */
     __HAL_RCC_TIM2_CLK_ENABLE();
   
@@ -162,10 +152,6 @@ void HAL_TIM_IC_MspInit(TIM_HandleTypeDef* htim_ic)
     GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
     GPIO_InitStruct.Alternate = GPIO_AF1_TIM2;
     HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
-
-  /* USER CODE BEGIN TIM2_MspInit 1 */
-
-  /* USER CODE END TIM2_MspInit 1 */
   }
 
 }
